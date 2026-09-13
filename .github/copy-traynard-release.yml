@@ -1,0 +1,41 @@
+name: Copy traynard portable
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag"
+        required: true
+        default: "v1.4.1"
+
+permissions:
+  contents: write
+
+jobs:
+  copy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Copy portable zip
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_REPO: za006/traynard
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -e
+
+          FILE="traynard-portable.zip"
+          URL="https://github.com/tabris17/traynard/releases/download/$TAG/$FILE"
+
+          curl -fL "$URL" -o "$FILE"
+
+          if ! gh release view "$TAG" --repo "$TARGET_REPO" >/dev/null 2>&1; then
+            gh release create "$TAG" \
+              --repo "$TARGET_REPO" \
+              --title "$TAG" \
+              --notes "Mirrored from tabris17/traynard"
+          fi
+
+          gh release upload "$TAG" "$FILE" \
+            --repo "$TARGET_REPO" \
+            --clobber
